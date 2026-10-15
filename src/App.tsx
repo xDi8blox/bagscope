@@ -57,7 +57,8 @@ export default function App() {
     const rows = dust ? all : priced
     const total = priced.reduce((s, h) => s + (h.value ?? 0), 0)
     const ch = priced.reduce((s, h) => s + (pnl24(h) ?? 0), 0)
-    const top = priced.slice(0, 7).map((h) => ({ label: h.symbol, value: h.value ?? 0 }))
+    const multi = new Set(all.map((h) => h.chain)).size > 1
+    const top = priced.slice(0, 7).map((h) => ({ label: multi ? `${h.symbol} · ${CHAIN_META[h.chain].name}` : h.symbol, value: h.value ?? 0 }))
     const rest = total - top.reduce((s, x) => s + x.value, 0)
     if (rest > total * 0.005) top.push({ label: 'Other', value: rest })
     const chains = [...new Set(p.holdings.map((h) => h.chain))]
