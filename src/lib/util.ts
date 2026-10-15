@@ -23,3 +23,6 @@ export const ago = (t: number) => { const s = (Date.now() - t) / 1000; return s 
 export async function settle<T>(p: Promise<T>, warn: string[], label: string): Promise<T | undefined> {
   try { return await p } catch (e) { warn.push(`${label}: ${(e as Error).message || 'failed'}`); return undefined }
 }
+
+/** Route remote images through a public image CDN (uniform sizing, avoids CORP-blocked hosts). */
+export const img = (u: string | undefined, w = 64) => !u ? undefined : u.startsWith('data:') ? u : `https://wsrv.nl/?url=${encodeURIComponent(u.replace('ipfs://', 'https://ipfs.io/ipfs/'))}&w=${w}&h=${w}&fit=cover&output=webp`

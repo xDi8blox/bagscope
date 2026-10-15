@@ -14,18 +14,17 @@ const rpc = <T,>(method: string, params: unknown[]) =>
 
 async function balances(addr: string, warn: string[]): Promise<{ sol: number; tokens: Map<string, number> }> {
   const tokens = new Map<string, number>()
-  const sol = await settle(rpc<{ value: number }>('getBalance', [addr]), warn, 'SOL balance')
-  let ok = false
-  for (const programId of PROGRAMS) {
-    const r = await settle(rpc<{ value: Any[] }>('getTokenAccountsByOwner', [addr, { programId }, { encoding: 'jsonParsed' }]), [], 'tokens')
-    if (!r) continue
-    ok = true
-    for (const a of r.value) { const i = a.account.data.parsed.info; const u = Number(i.tokenAmount.uiAmountString ?? i.tokenAmount.uiAmount); if (u > 0) tokens.set(i.mint, (tokens.get(i.mint) ?? 0) + u) }
-  }
-  let solAmt = sol ? sol.value / 1e9 : undefined
-  if (!ok || solAmt == null) { // fallback: Jupiter Ultra holdings (keyless)
-    const h = await settle(jget<Any>(`https://lite-api.jup.ag/ultra/v1/holdings/${addr}`, {}, 15000), warn, 'Token accounts')
-    if (h) { solAmt ??= Number(h.uiAmount ?? 0); for (const [mint, accs] of Object.entries<Any[]>(h.tokens ?? {})) { const u = accs.reduce((s, a) => s + Number(a.uiAmount ?? 0), 0); if (u > 0) tokens.set(mint, u) } }
+  let solAmt: number | undefined
+  // primary: Jupiter Ultra holdings (one keyless call); fallback: public RPC token accounts
+  const h = await settle(jget<Any>(`https://lite-api.jup.ag/ultra/v1/holdings/${addr}`, {}, 15000), [], 'holdings')
+  if (h) { solAmt = Number(h.uiAmount ?? 0); for (const [mint, accs] of Object.entries<Any[]>(h.tokens ?? {})) { const u = accs.reduce((s, a) => s + Number(a.uiAmount ?? 0), 0); if (u > 0 && mint !== SOL) tokens.set(mint, u) } }
+  else {
+    const sol = await settle(rpc<{ value: number }>('getBalance', [addr]), warn, 'SOL balance')
+    solAmt = sol ? sol.value / 1e9 : undefined
+    for (const programId of PROGRAMS) {
+      const r = await settle(rpc<{ value: Any[] }>('getTokenAccountsByOwner', [addr, { programId }, { encoding: 'jsonParsed' }]), warn, 'Token accounts')
+      for (const a of r?.value ?? []) { const i = a.account.data.parsed.info; const u = Number(i.tokenAmount.uiAmountString ?? i.tokenAmount.uiAmount); if (u > 0) tokens.set(i.mint, (tokens.get(i.mint) ?? 0) + u) }
+    }
   }
   if (solAmt == null && !tokens.size) throw new Error('Solana RPC unavailable')
   return { sol: solAmt ?? 0, tokens }

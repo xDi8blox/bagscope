@@ -3,7 +3,7 @@ import { Area, Donut, PALETTE } from './components/Charts'
 import { demo, load } from './lib/portfolio'
 import type { Chain, Holding, Portfolio } from './lib/types'
 import { CHAIN_META } from './lib/types'
-import { ago, num, pct, price, short, usd } from './lib/util'
+import { ago, img, num, pct, price, short, usd } from './lib/util'
 import { useWatch, watch } from './lib/watch'
 
 const EXAMPLES = [
@@ -18,7 +18,7 @@ const setUrl = (q?: string) => { const u = new URL(location.href); if (q) u.sear
 function Logo({ s = 30 }: { s?: number }) { return <img src={`${import.meta.env.BASE_URL}logo.svg`} width={s} height={s} alt="" /> }
 function TokenIcon({ h }: { h: Holding }) {
   const [err, setErr] = useState(false)
-  return h.logo && !err ? <img className="tok" src={h.logo} alt="" loading="lazy" onError={() => setErr(true)} /> : <span className="tok gen" style={{ background: `hsl(${[...h.symbol].reduce((a, c) => a + c.charCodeAt(0) * 37, 0) % 360} 60% 35%)` }}>{h.symbol.slice(0, 2)}</span>
+  return h.logo && !err ? <img className="tok" src={img(h.logo)} alt="" loading="lazy" onError={() => setErr(true)} /> : <span className="tok gen" style={{ background: `hsl(${[...h.symbol].reduce((a, c) => a + c.charCodeAt(0) * 37, 0) % 360} 60% 35%)` }}>{h.symbol.slice(0, 2)}</span>
 }
 const ChainDot = ({ c }: { c: Chain }) => <span className="chain" style={{ '--c': CHAIN_META[c].color } as React.CSSProperties}>{CHAIN_META[c].name}</span>
 function Copy({ text, label = 'Copy' }: { text: string; label?: string }) {
@@ -141,7 +141,7 @@ export default function App() {
           </section>
 
           {!!p.nfts.length && <section className="card nfts"><h2>NFTs <small className="dim">{p.nfts.length}</small></h2>
-            <div className="nft-grid">{p.nfts.map((n, i) => <a key={i} href={n.explorer} target="_blank" rel="noreferrer" className="nft">{n.image ? <img src={n.image.replace('ipfs://', 'https://ipfs.io/ipfs/')} alt="" loading="lazy" onError={(e) => (e.currentTarget.style.visibility = 'hidden')} /> : <span className="nft-ph">◆</span>}<b>{n.name}</b><small>{n.collection}</small></a>)}</div></section>}
+            <div className="nft-grid">{p.nfts.map((n, i) => <a key={i} href={n.explorer} target="_blank" rel="noreferrer" className="nft">{n.image ? <img src={img(n.image, 280)} alt="" loading="lazy" onError={(e) => (e.currentTarget.style.visibility = 'hidden')} /> : <span className="nft-ph">◆</span>}<b>{n.name}</b><small>{n.collection}</small></a>)}</div></section>}
           <footer className="foot dim">Data: Solana RPC · Jupiter · DexScreener · Blockscout · CoinGecko · publicnode. Updated {new Date(p.fetchedAt).toLocaleTimeString()}. Not financial advice. PnL is an estimate from 24h price change.</footer>
         </main>
       )}
